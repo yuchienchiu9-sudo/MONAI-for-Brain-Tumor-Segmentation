@@ -2,7 +2,7 @@
 just using MONAI and build 3D U-Net for brain tumor segmentation that view through what will happen
 # Brain Tumor Segmentation with MONAI (3D U-Net)
 
-This project explores how different data augmentation strategies affect the segmentation performance of a 3D U-Net model trained on the **BraTS dataset**, using the **MONAI** medical imaging framework.
+This project expect to explores how different data augmentation strategies affect the segmentation performance of a 3D U-Net model trained on the **BraTS dataset**, using the **MONAI** medical imaging framework.
 
 ---
 
@@ -36,6 +36,10 @@ The goal was not to achieve state-of-the-art accuracy, but to **build a fully re
 - Download the BraTS dataset (`imagesTr` and `labelsTr` folders).
 - Convert labels to binary masks (`tumor > 0 → 1`).
 - Verify shape alignment between image and label volumes.
+- make sure about the environment and check about the kernal you select.
+- https://decathlon-10.grand-challenge.org/
+(click "here" after enter into link1 it will just enter to the link2. However, I not really sure about whether link2 would change or not. Hence, link1 just for safety that if link2 change we could still find the dataset!)
+2.https://drive.google.com/drive/folders/1HqEgzS8BV2c7xYNrZdEAnrHk7osJJ--2
 
 ### 2. **Baseline Training (No Augmentation)**
 - Input normalization with `NormalizeIntensityd`.
