@@ -38,8 +38,8 @@ The goal was not to achieve state-of-the-art accuracy, but to **build a fully re
 - Verify shape alignment between image and label volumes.
 - make sure about the environment and check about the kernal you select.
 - https://decathlon-10.grand-challenge.org/
-(click "here" after enter into link1 it will just enter to the link2. However, I not really sure about whether link2 would change or not. Hence, link1 just for safety that if link2 change we could still find the dataset!)
--2.https://drive.google.com/drive/folders/1HqEgzS8BV2c7xYNrZdEAnrHk7osJJ--2
+  (click "here" after enter into link1 it will just enter to the link2. However, I not really sure about whether link2 would change or not. Hence, link1 just for safety that if link2 change we could still find the dataset!)
+- [https://decathlon-10.grand-challenge.org/](https://drive.google.com/drive/folders/1HqEgzS8BV2c7xYNrZdEAnrHk7osJJ--2)
 
 ### 2. **Baseline Training (No Augmentation)**
 - Input normalization with `NormalizeIntensityd`.
