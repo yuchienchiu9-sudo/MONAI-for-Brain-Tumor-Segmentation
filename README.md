@@ -1,111 +1,132 @@
-# MONAI-for-Brain-Tumor-Segmentation
-just using MONAI and build 3D U-Net for brain tumor segmentation that view through what will happen
 # Brain Tumor Segmentation with MONAI (3D U-Net)
 
-This project expect to explores how different data augmentation strategies affect the segmentation performance of a 3D U-Net model trained on the **BraTS dataset**, using the **MONAI** medical imaging framework.
+A 3D brain tumor segmentation project built with **MONAI** and **PyTorch**, 
+trained on the **BraTS dataset**. This project explores how different data 
+augmentation strategies affect segmentation stability and Dice performance, 
+and documents the debugging process that improved Val Dice from unstable 
+results to a stable **0.91+**.
 
 ---
 
-## Project Overview
+## Project Background
 
-This experiment was designed to answer a simple question:
-
-> 💭 *"How do different data augmentations (like flip, noise, or affine) influence model stability and Dice performance in 3D medical image segmentation?"*
-
-The goal was not to achieve state-of-the-art accuracy, but to **build a fully reproducible baseline**, understand **training behavior under different augmentations**, and gain insight into how **data diversity** impacts model generalization.
-
----
-
-## Core Ideas
-
-| Component | Description |
-|------------|-------------|
-| **Task** | Binary brain tumor segmentation (tumor vs. background) |
-| **Dataset** | BraTS 2021 (`.nii.gz` volumes, 4 modalities per case) |
-| **Framework** | [MONAI](https://monai.io/) + PyTorch |
-| **Model** | 3D U-Net with encoder–decoder skip connections |
-| **Loss Function** | `DiceCELoss` (Dice + CrossEntropy) |
-| **Evaluation Metric** | Dice coefficient (0–1, higher is better) |
-| **Hardware** | CPU / GPU (tested on local environment, MONAI CPU mode supported) |
+This project was originally developed as a course mini-project, 
+then revisited and significantly improved after graduation. 
+The initial version suffered from training instability and 
+fluctuating Dice scores. After systematic debugging, 
+the root causes were identified and resolved.
 
 ---
 
-##  Implementation Workflow
+## Bugs Found & Fixed
 
-### 1. **Dataset Preparation**
-- Download the BraTS dataset (`imagesTr` and `labelsTr` folders).
-- Convert labels to binary masks (`tumor > 0 → 1`).
-- Verify shape alignment between image and label volumes.
-- make sure about the environment and check about the kernal you select.
-- https://decathlon-10.grand-challenge.org/
-  (click "here" after enter into link1 it will just enter to the link2. However, I not really sure about whether link2 would change or not. Hence, link1 just for safety that if link2 change we could still find the dataset!)
-- [https://decathlon-10.grand-challenge.org/](https://drive.google.com/drive/folders/1HqEgzS8BV2c7xYNrZdEAnrHk7osJJ--2)
-
-### 2. **Baseline Training (No Augmentation)**
-- Input normalization with `NormalizeIntensityd`.
-- Patch-based training using `RandCropByPosNegLabeld`:
-  - Patch size: `96 × 96 × 96`
-  - Sampling ratio: `pos=3`, `neg=1`
-- Model: 3D U-Net with 4 down-sampling levels.
-- Loss: Dice + CrossEntropy (`DiceCELoss`).
-- Optimizer: Adam (`lr=3e-4` with `ReduceLROnPlateau` scheduler).
-
-### 3. **Experiment: Adding Augmentation**
-Compared variants:
-- `Baseline` – no augmentation  
-- `+Flip` – random axis flipping  
-- `+Flip+Noise` – add Gaussian noise  
-- `+Affine+Elastic` – geometric warping  
-Each variant was trained with the same seed, hyperparameters, and number of epochs for fair comparison.
-
-### 4. **Evaluation**
-- Used `sliding_window_inference` for full-volume Dice evaluation.  
-- Dice metric computed with `DiceMetric(include_background=False)`.
+| Problem | Root Cause | Fix |
+|---------|-----------|-----|
+| Dice score highly unstable | Validation used only 1 case (BRATS_001) | Changed to full val set (97 cases) |
+| Poor normalization | `ScaleIntensity` applied globally across 4 MRI modalities | Replaced with `NormalizeIntensityd(channel_wise=True)` |
+| Gradient explosion | No gradient clipping in some versions | Added `clip_grad_norm_(model.parameters(), 1.0)` |
+| Slow / no convergence | Learning rate inconsistent across versions | Unified to `lr=2e-4` with `ReduceLROnPlateau` |
 
 ---
 
-## Results Summary
+## Experiment Design
 
-| Experiment | Description | Observed Dice Trend |
-|-------------|--------------|----------------------|
-| Baseline (no aug) | Stable convergence, moderate overfitting | ~0.45 |
-| +Flip / +Noise | Slight regularization, small Dice variation | 0.4–0.46 |
-| +Affine / +Elastic | Higher randomness, unstable if dataset small | 0.3–0.4 |
+Three augmentation strategies were compared under identical conditions:
+- Same random seed (`SEED=42`)
+- Same train/val split (387 train / 97 val)
+- Same model architecture and hyperparameters
+- Same number of epochs (120)
 
- **Takeaway:** Augmentation helps regularization **only when enough cases and foreground patches exist**.  
-With limited data, heavy transforms may cause underfitting or instability.
+| Version | Augmentation | Best Val Dice | Best Epoch |
+|---------|-------------|--------------|------------|
+| Baseline | None | 0.9141 | 105 |
+| Flip Only | RandFlip (prob=0.5) | TBD | TBD |
+| Affine + Flip | RandAffine + RandFlip | 0.9135 | 85 |
 
----
-
-##  Key Learnings
-
-1. **Patch sampling matters more than augmentation** when training on small datasets.  
-2. **Too strong augmentation (e.g., affine+elastic)** may distort anatomical structures and harm Dice.  
-3. **Balanced data sampling** (foreground vs. background) has a direct impact on model stability.  
-4. **DiceCELoss** provides smoother convergence than standalone Dice or BCE.
-
----
-
-##  Future Improvements
-
-| Goal | Next Step |
-|------|------------|
-| **1. Data scale-up** | Train on full BraTS dataset (20–50 cases) to evaluate generalization. |
-| **2. Augmentation tuning** | Systematically vary augmentation probability (`prob=0.2–0.7`) and intensity. |
-| **3. Multi-class segmentation** | Extend from binary (tumor vs. background) to sub-regions (edema, enhancing core, necrotic). |
-| **4. Visualization** | Add MONAI’s `NiftiSaver` or `matplotlib` slices to visualize predictions. |
-| **5. Automation** | Wrap training & evaluation into a single reproducible script with config files. |
+### Key Findings
+- Augmentation significantly **speeds up early convergence**
+  (Epoch 5: Affine+Flip 0.79 vs Baseline 0.64)
+- With sufficient training data (387 cases), 
+  final Dice scores converge to similar levels (~0.91)
+- Augmentation benefit is expected to be more pronounced 
+  with smaller datasets
 
 ---
 
-##  Environment
+## Model Architecture
 
-- Python 3.10  
-- MONAI 1.x  
-- PyTorch ≥ 2.0  
-- NumPy, Matplotlib, Nibabel  
+```python
+UNet(
+    spatial_dims=3,
+    in_channels=4,       # BraTS: T1, T1ce, T2, FLAIR
+    out_channels=1,      # Binary: tumor vs background
+    channels=(16, 32, 64, 128, 256),
+    strides=(2, 2, 2, 2),
+    num_res_units=2,
+)
+# Parameters: ~4M
+```
+
+---
+
+## Training Details
+
+| Config | Value |
+|--------|-------|
+| Dataset | BraTS (484 cases total) |
+| Train / Val Split | 387 / 97 |
+| Patch Size | 96 × 96 × 96 |
+| Batch Size | 1 |
+| Loss Function | DiceCELoss (Dice + CrossEntropy) |
+| Optimizer | Adam (lr=2e-4, weight_decay=1e-5) |
+| LR Scheduler | ReduceLROnPlateau (patience=6, factor=0.5) |
+| Inference | Sliding window (ROI=128³, overlap=0.5) |
+| Hardware | RTX 4060 8GB |
+
+---
+
+## Results
+
+### Affine + Flip
+<img width="448" height="513" alt="{D991F9EB-2D63-404F-AA32-AF18C4E76C83}" src="https://github.com/user-attachments/assets/8c237a0e-d2f3-41ee-9654-95825a2ae2fe" />
+<img width="927" height="374" alt="{28B1D5AF-B348-4019-B0B7-817070864B45}" src="https://github.com/user-attachments/assets/8d979e4b-7a9c-4a96-ae55-0a525fdce6f7" />
+
+
+
+### Baseline
+<img width="471" height="367" alt="{24A6485C-356C-4A5A-8698-713EA8963D04}" src="https://github.com/user-attachments/assets/ea9c674c-0189-46a8-b07f-1dcfe2987fef" />
+
+<img width="1017" height="411" alt="{EBF5D2EF-81A2-4DE2-9543-1BDFE0DD8C86}" src="https://github.com/user-attachments/assets/795babfb-95e7-4d1a-b26b-6c15c8a3fff3" />
+
+
+---
+
+## Dataset
+
+BraTS dataset from Medical Segmentation Decathlon:
+- Link: https://decathlon-10.grand-challenge.org/
+- Direct: https://drive.google.com/drive/folders/1HqEgzS8BV2c7xYNrZdEAnrHk7osJJ--2
+
+---
+
+## Environment
 
 ```bash
-conda create -n monai_cpu python=3.10
-conda activate monai_cpu
+conda create -n monai_gpu python=3.10
+conda activate monai_gpu
 pip install monai torch torchvision nibabel matplotlib
+```
+
+- Python 3.10
+- MONAI 1.x
+- PyTorch ≥ 2.0
+- CUDA supported (tested on RTX 4060)
+
+---
+
+## Future Work
+
+- Complete Flip Only experiment and finalize 3-way comparison
+- Extend to multi-class segmentation (edema, enhancing tumor, necrotic core)
+- Try SwinUNETR (Transformer-based architecture)
+- Add prediction visualization with matplotlib slices
