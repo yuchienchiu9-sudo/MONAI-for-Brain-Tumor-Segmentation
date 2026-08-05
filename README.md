@@ -10,12 +10,7 @@ results to a stable **0.91+**.
 
 ## Project Background
 
-This project was originally developed as a course mini-project, 
-then revisited and significantly improved after graduation. 
-The initial version suffered from training instability and 
-fluctuating Dice scores. After systematic debugging, 
-the root causes were identified and resolved.
-
+This project was originally developed as a course mini-project and later revisited and improved during my graduate studies at UC Irvine.
 ---
 
 ## Bugs Found & Fixed
@@ -38,19 +33,17 @@ Three augmentation strategies were compared under identical conditions:
 - Same number of epochs (120)
 
 | Version | Augmentation | Best Val Dice | Best Epoch |
-|---------|-------------|--------------|------------|
+|---|---|---:|---:|
 | Baseline | None | 0.9141 | 105 |
-| Flip Only | RandFlip (prob=0.5) | TBD | TBD |
+| Flip Only | RandFlip (prob=0.5) | 0.9154 | 105 |
 | Affine + Flip | RandAffine + RandFlip | 0.9135 | 85 |
 
 ### Key Findings
-- Augmentation significantly **speeds up early convergence**
-  (Epoch 5: Affine+Flip 0.79 vs Baseline 0.64)
-- With sufficient training data (387 cases), 
-  final Dice scores converge to similar levels (~0.91)
-- Augmentation benefit is expected to be more pronounced 
-  with smaller datasets
 
+- All three configurations achieved comparable final validation Dice scores around 0.91.
+- Flip Only produced the highest observed score (0.9154), but the difference between configurations was small.
+- Affine + Flip converged faster during early training, but did not improve the best final Dice score.
+- Under this dataset and training setup, augmentation had limited impact on final segmentation performance.
 ---
 
 ## Model Architecture
@@ -126,7 +119,6 @@ pip install monai torch torchvision nibabel matplotlib
 
 ## Future Work
 
-- Complete Flip Only experiment and finalize 3-way comparison
 - Extend to multi-class segmentation (edema, enhancing tumor, necrotic core)
 - Try SwinUNETR (Transformer-based architecture)
 - Add prediction visualization with matplotlib slices
